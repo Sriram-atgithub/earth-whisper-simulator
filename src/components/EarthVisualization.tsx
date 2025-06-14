@@ -1,6 +1,6 @@
 
 import { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -19,7 +19,7 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
   );
 
   // Fill texture data
-  const data = earthTexture.image.data;
+  const data = earthTexture.image.data as Uint8Array;
   for (let i = 0; i < data.length; i += 3) {
     const x = ((i / 3) % 512);
     const y = Math.floor((i / 3) / 512);
@@ -96,7 +96,8 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
 
   const { points, colors } = generateDataPoints();
 
-  const handleClick = (event: THREE.Event) => {
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
     if (event.point) {
       onRegionSelect(event.point);
     }
