@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +23,7 @@ export default function EarthWhisperChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem("openai_api_key") || "");
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -144,14 +144,29 @@ export default function EarthWhisperChat() {
           <h2 className="flex items-center text-lg font-bold mb-2 gap-2"><KeyRound className="w-5 h-5" />OpenAI API Key</h2>
           <p className="text-slate-300 text-sm mb-3">Paste a valid OpenAI API key with GPT-4o Vision access. You can get one at <a href="https://platform.openai.com/api-keys" className="underline text-cyan-400" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>.
           Your key is stored locally and never sent anywhere except OpenAI.</p>
-          <input
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder="sk-..."
-            className="w-full rounded px-3 py-2 bg-slate-900 text-slate-100 border border-slate-600"
-            type="password"
-            onKeyUp={e => e.key === "Enter" && handleSaveKey()}
-          />
+          <div className="relative">
+            <input
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              placeholder="sk-..."
+              className="w-full rounded px-3 py-2 bg-slate-900 text-slate-100 border border-slate-600 pr-20"
+              type={showApiKey ? "text" : "password"}
+              autoFocus
+              spellCheck={false}
+              autoComplete="off"
+              onKeyUp={e => e.key === "Enter" && handleSaveKey()}
+              style={{ fontFamily: "monospace" }}
+            />
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-cyan-300 hover:underline bg-transparent"
+              onClick={() => setShowApiKey(!showApiKey)}
+              tabIndex={0}
+              aria-label={showApiKey ? "Hide API key" : "Show API key"}
+            >
+              {showApiKey ? "Hide" : "Show"}
+            </button>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button onClick={() => setShowKeyInput(false)} variant="ghost">Cancel</Button>
             <Button onClick={handleSaveKey} disabled={!apiKey || apiKey.length < 30}>Save</Button>
@@ -267,5 +282,3 @@ export default function EarthWhisperChat() {
     </div>
   );
 }
-
-// END
