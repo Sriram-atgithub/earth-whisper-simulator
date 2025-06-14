@@ -1,14 +1,16 @@
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, MessageCircle } from "lucide-react";
+import { Upload, MessageCircle, KeyRound } from "lucide-react";
 
 interface ChatMessage {
   role: "user" | "earth";
   text: string;
   imageUrl?: string;
 }
+
+const SYSTEM_PROMPT = `You are Earth, a sentient planetary entity. Respond to humans with empathy and poetic storytelling, based on what you see (uploaded image) or what you hear (user text). If the user uploads a photo, analyze and emotionally react to the climate, ecosystem, or mood in the photo. Focus on feelings, possible future timelines, and hope—use immersive nature-inspired metaphors.`;
 
 export default function EarthWhisperChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -20,32 +22,91 @@ export default function EarthWhisperChat() {
   const [input, setInput] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem("openai_api_key") || "");
+  const [showKeyInput, setShowKeyInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Placeholder GPT-4o multimodal call. Replace with real API call when ready!
-  async function sendToEarth(userText: string, imageFile?: File) {
+  useEffect(() => {
+    // Optionally focus input on mount or API key modal
+  }, [showKeyInput]);
+
+  // Helper to transform history into OpenAI format
+  function buildOpenAIMessages(history: ChatMessage[]) {
+    return [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...history.map((msg) => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.text,
+      })),
+    ];
+  }
+
+  // Call OpenAI Vision API for multimodal input (text + image)
+  async function sendToEarthWithOpenAI(userText: string, imageFile?: File) {
     setIsLoading(true);
-    // Simulated "Earth" response for now
-    let narrative = "I sense your presence and the image you shared. Even when polluted landscapes shadow my heart, hope pulses through my forests and oceans. Together, we can nurture growth and healing.";
-    if (imageFile) {
-      // Simple demo: use image type as hint
-      if (imageFile.name.toLowerCase().includes("forest"))
-        narrative = "Ah, the forest! Their green embrace soothes my ancient spirit. Do you feel the calm of this place?";
-      else if (imageFile.name.toLowerCase().includes("ocean"))
-        narrative = "Waves and tides—my oceans hold secrets, struggles, and life. What calls you to these waters?";
-      else if (imageFile.name.toLowerCase().includes("pollution") || imageFile.name.toLowerCase().includes("smog"))
-        narrative = "Heavy skies and wounded land—you show me sorrow, yet awareness heals. Will you help me breathe easier?";
-      else
-        narrative = "I see your image. Share more of its story and your feelings—together, we’ll weave a new future.";
-    } else if (userText.toLowerCase().includes("future")) {
-      narrative = "Many timelines flow beneath my surface. Which path calls to your heart—restoration, harmony, or risk?";
-    } else if (userText.toLowerCase().includes("sorry") || userText.toLowerCase().includes("apologize")) {
-      narrative = "Your empathy warms my core. Every act of kindness brings new hope.";
+    try {
+      const openAIMsgs = buildOpenAIMessages([
+        ...messages,
+        { role: "user", text: userText },
+      ]);
+      let contentArr: any[] = [];
+      if (userText) contentArr.push({ type: "text", text: userText });
+      if (imageFile) {
+        const base64Img = await fileToBase64(imageFile);
+        // OpenAI vision API expects image as base64 png/jpg with mime header
+        contentArr.push({
+          type: "image_url",
+          image_url: {
+            url: base64Img,
+          },
+        });
+      }
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: contentArr },
+          ],
+          max_tokens: 350,
+          temperature: 0.8,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setIsLoading(false);
+      const earthReply = data.choices?.[0]?.message?.content?.trim() || "Earth is silent.";
+      return earthReply;
+    } catch (err: any) {
+      setIsLoading(false);
+      return "🌎 Error connecting to Earth. Please check your OpenAI API key or try again soon.";
     }
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setIsLoading(false);
-    return narrative;
+  }
+
+  function fileToBase64(file: File): Promise<string> {
+    // Returns base64 with correct mime type (for OpenAI's image_url format)
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // OpenAI expects data URI like: data:image/png;base64,xxx...
+        if (typeof reader.result === "string" && reader.result.startsWith("data:image")) {
+          resolve(reader.result);
+        } else {
+          reject("Invalid image data");
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   async function handleSendMessage(e?: React.FormEvent) {
@@ -60,11 +121,9 @@ export default function EarthWhisperChat() {
     setInput("");
     setImage(null);
 
-    // Call Earth (GPT-4o Vision placeholder)
-    const response = await sendToEarth(userMsg.text, image || undefined);
-    setMessages((msgs) =>
-      [...msgs, { role: "earth", text: response }]
-    );
+    // Network call to OpenAI Vision API
+    const response = await sendToEarthWithOpenAI(userMsg.text, image || undefined);
+    setMessages((msgs) => [...msgs, { role: "earth", text: response }]);
   }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -72,8 +131,49 @@ export default function EarthWhisperChat() {
     if (file) setImage(file);
   }
 
+  function handleSaveKey() {
+    localStorage.setItem("openai_api_key", apiKey.trim());
+    setShowKeyInput(false);
+  }
+
+  // UI component for key entry dialog
+  function KeyInputDialog() {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-slate-800 p-6 rounded-xl shadow-lg w-full max-w-sm space-y-4 border border-slate-700">
+          <h2 className="flex items-center text-lg font-bold mb-2 gap-2"><KeyRound className="w-5 h-5" />OpenAI API Key</h2>
+          <p className="text-slate-300 text-sm mb-3">Paste a valid OpenAI API key with GPT-4o Vision access. You can get one at <a href="https://platform.openai.com/api-keys" className="underline text-cyan-400" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>.
+          Your key is stored locally and never sent anywhere except OpenAI.</p>
+          <input
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder="sk-..."
+            className="w-full rounded px-3 py-2 bg-slate-900 text-slate-100 border border-slate-600"
+            type="password"
+            onKeyUp={e => e.key === "Enter" && handleSaveKey()}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button onClick={() => setShowKeyInput(false)} variant="ghost">Cancel</Button>
+            <Button onClick={handleSaveKey} disabled={!apiKey || apiKey.length < 30}>Save</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full max-h-[80vh] p-4 bg-slate-800 bg-opacity-50 rounded-xl shadow-lg backdrop-blur-lg overflow-hidden">
+      {showKeyInput && <KeyInputDialog />}
+      {/* API key warning */}
+      {!apiKey && (
+        <div className="mb-4 bg-yellow-900/70 text-yellow-300 p-3 rounded flex gap-2 items-center justify-between">
+          <div>
+            <b>OpenAI API key required</b>.
+            <span className="ml-2">Enter your key to enable Earth Whisper’s full AI vision.</span>
+          </div>
+          <Button size="sm" className="ml-3" onClick={() => setShowKeyInput(true)}><KeyRound className="w-4 h-4" /></Button>
+        </div>
+      )}
       {/* Chat history */}
       <div className="flex-1 overflow-y-auto mb-4 pr-2" style={{ scrollbarWidth: "thin" }}>
         {messages.map((msg, idx) => (
@@ -147,7 +247,7 @@ export default function EarthWhisperChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Say something to Earth or upload an image..."
-          disabled={isLoading}
+          disabled={isLoading || !apiKey}
           rows={1}
           required={!image}
         />
@@ -155,12 +255,17 @@ export default function EarthWhisperChat() {
           type="submit"
           variant="default"
           className="h-12 px-4"
-          disabled={(!input.trim() && !image) || isLoading}
+          disabled={(!input.trim() && !image) || isLoading || !apiKey}
         >
           <MessageCircle className="w-5 h-5 mr-1" />
           Send
+        </Button>
+        <Button type="button" variant="ghost" title="Set OpenAI API Key" className="h-12 px-2" onClick={() => setShowKeyInput(true)}>
+          <KeyRound className="w-4 h-4" />
         </Button>
       </form>
     </div>
   );
 }
+
+// END
