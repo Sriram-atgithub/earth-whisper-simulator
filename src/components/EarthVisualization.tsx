@@ -1,8 +1,9 @@
-
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
+import { getRegionFromCoordinates, generateRegionalData, GeographicalRegion } from '../utils/geoUtils';
+import DataLayerVisualizer from './DataLayerVisualizer';
 
 const Satellites = ({ timeSpeed }) => {
     const satRef = useRef<THREE.Group>(null);
@@ -42,7 +43,6 @@ const Satellites = ({ timeSpeed }) => {
 const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const cloudsRef = useRef<THREE.Mesh>(null);
-  const dataLayerRef = useRef<THREE.Points>(null);
 
   // Create procedural textures instead of loading external ones
   const textures = useMemo(() => {
@@ -139,48 +139,6 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
     }
   });
 
-  const generateDataPoints = () => {
-    const points = [];
-    const colors = [];
-    
-    for (let i = 0; i < 5000; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const radius = 1.01 + Math.random() * 0.1;
-      
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.cos(phi);
-      const z = radius * Math.sin(phi) * Math.sin(theta);
-      
-      points.push(x, y, z);
-      
-      // Color based on active layer
-      let color;
-      switch (activeLayer) {
-        case 'temperature':
-          color = new THREE.Color().setHSL(0.7 - Math.random() * 0.7, 1, 0.5);
-          break;
-        case 'precipitation':
-          color = new THREE.Color().setHSL(0.6, 1, 0.3 + Math.random() * 0.4);
-          break;
-        case 'wind':
-          color = new THREE.Color().setHSL(0.3, 1, 0.3 + Math.random() * 0.4);
-          break;
-        case 'clouds':
-          color = new THREE.Color().setHSL(0, 0, 0.7 + Math.random() * 0.3);
-          break;
-        default:
-          color = new THREE.Color().setHSL(Math.random(), 1, 0.5);
-      }
-      
-      colors.push(color.r, color.g, color.b);
-    }
-    
-    return { points: new Float32Array(points), colors: new Float32Array(colors) };
-  };
-
-  const { points, colors } = generateDataPoints();
-
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     if (event.point) {
@@ -188,14 +146,21 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
       const lat = Math.asin(event.point.y / radius) * (180 / Math.PI);
       const lon = Math.atan2(event.point.z, event.point.x) * (180 / Math.PI);
 
+      // Get real geographical region
+      const region = getRegionFromCoordinates(lat, lon);
+
       const regionData = {
         lat,
         lon,
-        name: `Region (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
+        name: region.name,
+        type: region.type,
+        continent: region.continent,
+        country: region.country,
+        state: region.state,
         data: {
-          temperature: `${(Math.random() * 50 - 20).toFixed(1)}°C`,
-          precipitation: `${(Math.random() * 150).toFixed(1)}mm`,
-          wind: `${(Math.random() * 80).toFixed(1)} km/h`,
+          temperature: `${generateRegionalData(region, 'temperature')}°C`,
+          precipitation: `${generateRegionalData(region, 'precipitation')}mm`,
+          wind: `${generateRegionalData(region, 'wind')} km/h`,
           clouds: `${(Math.random() * 100).toFixed(0)}%`,
           ocean: `${(Math.random() * 4).toFixed(1)} kts`,
           vegetation: `${(Math.random()).toFixed(2)} NDVI`,
@@ -237,29 +202,8 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
         />
       </mesh>
 
-      <points ref={dataLayerRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={points.length / 3}
-            array={points}
-            itemSize={3}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            count={colors.length / 3}
-            array={colors}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial 
-          vertexColors 
-          size={0.02}
-          transparent
-          opacity={0.8}
-          sizeAttenuation={false}
-        />
-      </points>
+      {/* Data Layer Visualization */}
+      <DataLayerVisualizer activeLayer={activeLayer} isVisible={true} />
 
       <ambientLight intensity={0.1} />
       <directionalLight position={[10, 0, 5]} intensity={2.5} />
