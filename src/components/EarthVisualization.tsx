@@ -1,7 +1,6 @@
-
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
@@ -10,36 +9,8 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
   const dataLayerRef = useRef<THREE.Points>(null);
   const [time, setTime] = useState(0);
 
-  // Create Earth texture
-  const earthTexture = new THREE.DataTexture(
-    new Uint8Array(512 * 256 * 3),
-    512,
-    256,
-    THREE.RGBFormat
-  );
-
-  // Fill texture data
-  const data = earthTexture.image.data as Uint8Array;
-  for (let i = 0; i < data.length; i += 3) {
-    const x = ((i / 3) % 512);
-    const y = Math.floor((i / 3) / 512);
-    const lat = (y / 256) * Math.PI - Math.PI / 2;
-    const lon = (x / 512) * Math.PI * 2 - Math.PI;
-    
-    // Create a simple Earth-like texture
-    const landMask = Math.sin(lat) * Math.cos(lon * 3) + Math.cos(lat * 2) > 0.1;
-    
-    if (landMask) {
-      data[i] = 34;     // R - Forest green for land
-      data[i + 1] = 139; // G
-      data[i + 2] = 34;  // B
-    } else {
-      data[i] = 25;      // R - Midnight blue for oceans
-      data[i + 1] = 25;  // G
-      data[i + 2] = 112; // B
-    }
-  }
-  earthTexture.needsUpdate = true;
+  // Use a realistic Earth texture
+  const earthTexture = useTexture('https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57735/land_ocean_ice_cloud_2048.jpg');
 
   useFrame((state) => {
     if (isPlaying) {
