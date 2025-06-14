@@ -1,3 +1,4 @@
+
 import { useRef, useState } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
@@ -9,8 +10,8 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
   const dataLayerRef = useRef<THREE.Points>(null);
   const [time, setTime] = useState(0);
 
-  // Use a realistic Earth texture
-  const earthTexture = useTexture('https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57735/land_ocean_ice_cloud_2048.jpg');
+  // Use a realistic Earth texture from a reliable source
+  const earthTexture = useTexture('https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg');
 
   useFrame((state) => {
     if (isPlaying) {
