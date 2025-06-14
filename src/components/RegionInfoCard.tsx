@@ -35,28 +35,30 @@ const RegionInfoCard = ({ region, onClose, allLayers }) => {
                             <span className="text-xl">{getRegionTypeIcon(region.type)}</span>
                             <CardTitle className="text-blue-400 text-lg">{region.name}</CardTitle>
                         </div>
-                        <CardDescription className="text-slate-400 space-y-1">
-                            <div className="flex items-center space-x-1">
-                                <MapPin size={14} />
-                                <span>Lat: {region.lat.toFixed(2)}°, Lon: {region.lon.toFixed(2)}°</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                <Globe2 size={14} />
-                                <span className={getRegionTypeColor(region.type)}>
-                                    {region.type.charAt(0).toUpperCase() + region.type.slice(1)}
-                                </span>
-                                <span>in {region.continent}</span>
-                            </div>
-                            {region.country && region.country !== region.name && (
-                                <div className="text-xs text-slate-500">
-                                    Country: {region.country}
+                        <CardDescription className="text-slate-400">
+                            <div className="space-y-1">
+                                <div className="flex items-center space-x-1">
+                                    <MapPin size={14} />
+                                    <span>Lat: {region.lat.toFixed(2)}°, Lon: {region.lon.toFixed(2)}°</span>
                                 </div>
-                            )}
-                            {region.state && (
-                                <div className="text-xs text-slate-500">
-                                    State: {region.state}
+                                <div className="flex items-center space-x-1">
+                                    <Globe2 size={14} />
+                                    <span className={getRegionTypeColor(region.type)}>
+                                        {region.type.charAt(0).toUpperCase() + region.type.slice(1)}
+                                    </span>
+                                    <span>in {region.continent}</span>
                                 </div>
-                            )}
+                                {region.country && region.country !== region.name && (
+                                    <div className="text-xs text-slate-500">
+                                        Country: {region.country}
+                                    </div>
+                                )}
+                                {region.state && (
+                                    <div className="text-xs text-slate-500">
+                                        State: {region.state}
+                                    </div>
+                                )}
+                            </div>
                         </CardDescription>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-700 -mt-2 -mr-2">

@@ -177,7 +177,7 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
         <meshPhongMaterial 
           map={textures.dayTexture}
           emissiveMap={textures.nightTexture}
-          emissive={new THREE.Color(0x444444)}
+          emissive={new THREE.Color(0x222222)}
           shininess={100}
         />
       </mesh>
@@ -205,8 +205,8 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
       {/* Data Layer Visualization */}
       <DataLayerVisualizer activeLayer={activeLayer} isVisible={true} />
 
-      <ambientLight intensity={0.1} />
-      <directionalLight position={[10, 0, 5]} intensity={2.5} />
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[10, 0, 5]} intensity={1.5} />
     </group>
   );
 };

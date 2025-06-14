@@ -18,11 +18,11 @@ const DataLayerVisualizer = ({ activeLayer, isVisible }: DataLayerVisualizerProp
     const colors = [];
     const sizes = [];
     
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 2000; i++) {
       // Distribute points on sphere surface
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const radius = 1.02 + Math.random() * 0.05;
+      const radius = 1.01 + Math.random() * 0.03;
       
       const x = radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.cos(phi);
@@ -39,46 +39,46 @@ const DataLayerVisualizer = ({ activeLayer, isVisible }: DataLayerVisualizerProp
           // Temperature: Blue (cold) to Red (hot)
           const tempValue = Math.random();
           color = new THREE.Color().setHSL(0.7 - tempValue * 0.7, 1, 0.5);
-          size = 0.02 + tempValue * 0.03;
+          size = 0.015 + tempValue * 0.025;
           break;
           
         case 'precipitation':
           // Precipitation: Light blue to dark blue
           const precipValue = Math.random();
           color = new THREE.Color().setHSL(0.6, 1, 0.3 + precipValue * 0.4);
-          size = 0.01 + precipValue * 0.04;
+          size = 0.01 + precipValue * 0.03;
           break;
           
         case 'wind':
           // Wind: Green with varying intensity
           const windValue = Math.random();
           color = new THREE.Color().setHSL(0.3, 1, 0.3 + windValue * 0.5);
-          size = 0.015 + windValue * 0.035;
+          size = 0.012 + windValue * 0.028;
           break;
           
         case 'clouds':
           // Clouds: White with varying opacity
           color = new THREE.Color(1, 1, 1);
-          size = 0.03 + Math.random() * 0.02;
+          size = 0.02 + Math.random() * 0.015;
           break;
           
         case 'ocean':
           // Ocean currents: Cyan to deep blue
           const oceanValue = Math.random();
           color = new THREE.Color().setHSL(0.5, 1, 0.3 + oceanValue * 0.4);
-          size = 0.02 + oceanValue * 0.03;
+          size = 0.015 + oceanValue * 0.025;
           break;
           
         case 'vegetation':
           // Vegetation: Yellow to green
           const vegValue = Math.random();
           color = new THREE.Color().setHSL(0.15 + vegValue * 0.15, 1, 0.4 + vegValue * 0.3);
-          size = 0.015 + vegValue * 0.025;
+          size = 0.012 + vegValue * 0.02;
           break;
           
         default:
           color = new THREE.Color(1, 1, 1);
-          size = 0.02;
+          size = 0.015;
       }
       
       colors.push(color.r, color.g, color.b);
@@ -101,23 +101,32 @@ const DataLayerVisualizer = ({ activeLayer, isVisible }: DataLayerVisualizerProp
     switch (activeLayer) {
       case 'wind':
         // Rotating wind patterns
-        pointsRef.current.rotation.y += delta * 0.1;
+        if (pointsRef.current) {
+          pointsRef.current.rotation.y += delta * 0.2;
+        }
         break;
         
       case 'clouds':
         // Floating cloud movement
-        pointsRef.current.rotation.y += delta * 0.05;
-        pointsRef.current.rotation.x = Math.sin(time * 0.2) * 0.1;
+        if (pointsRef.current) {
+          pointsRef.current.rotation.y += delta * 0.1;
+          pointsRef.current.rotation.x = Math.sin(time * 0.3) * 0.05;
+        }
         break;
         
       case 'ocean':
         // Wave-like ocean current movement
-        pointsRef.current.rotation.y += delta * 0.02;
+        if (pointsRef.current) {
+          pointsRef.current.rotation.y += delta * 0.05;
+          pointsRef.current.rotation.z = Math.sin(time * 0.2) * 0.02;
+        }
         break;
         
       default:
         // Gentle rotation for other layers
-        pointsRef.current.rotation.y += delta * 0.01;
+        if (pointsRef.current) {
+          pointsRef.current.rotation.y += delta * 0.02;
+        }
     }
   });
 
@@ -149,7 +158,7 @@ const DataLayerVisualizer = ({ activeLayer, isVisible }: DataLayerVisualizerProp
         <pointsMaterial
           vertexColors
           transparent
-          opacity={0.8}
+          opacity={0.7}
           sizeAttenuation={true}
           size={1}
         />
