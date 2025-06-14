@@ -1,7 +1,7 @@
 
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Stars, useTexture } from '@react-three/drei';
+import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
 const Satellites = ({ timeSpeed }) => {
@@ -44,12 +44,86 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const cloudsRef = useRef<THREE.Mesh>(null);
   const dataLayerRef = useRef<THREE.Points>(null);
 
-  const [dayTexture, nightTexture, specularTexture, cloudTexture] = useTexture([
-    'https://stemkoski.github.io/Three.js/images/earth-day.jpg',
-    'https://stemkoski.github.io/Three.js/images/earth-night.jpg',
-    'https://stemkoski.github.io/Three.js/images/earth-specular.jpg',
-    'https://stemkoski.github.io/Three.js/images/earth-clouds.png',
-  ]);
+  // Create procedural textures instead of loading external ones
+  const textures = useMemo(() => {
+    // Create a simple day texture (blue and green)
+    const dayCanvas = document.createElement('canvas');
+    dayCanvas.width = 512;
+    dayCanvas.height = 256;
+    const dayCtx = dayCanvas.getContext('2d');
+    
+    // Create a gradient for the day texture
+    const dayGradient = dayCtx.createLinearGradient(0, 0, 512, 256);
+    dayGradient.addColorStop(0, '#4a90e2');
+    dayGradient.addColorStop(0.3, '#87ceeb');
+    dayGradient.addColorStop(0.7, '#228b22');
+    dayGradient.addColorStop(1, '#006400');
+    dayCtx.fillStyle = dayGradient;
+    dayCtx.fillRect(0, 0, 512, 256);
+    
+    // Add some random landmass patterns
+    for (let i = 0; i < 50; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 256;
+      const radius = Math.random() * 20 + 5;
+      dayCtx.fillStyle = '#8b4513';
+      dayCtx.beginPath();
+      dayCtx.arc(x, y, radius, 0, Math.PI * 2);
+      dayCtx.fill();
+    }
+    
+    const dayTexture = new THREE.CanvasTexture(dayCanvas);
+    dayTexture.wrapS = THREE.RepeatWrapping;
+    dayTexture.wrapT = THREE.RepeatWrapping;
+
+    // Create a simple night texture (darker with city lights)
+    const nightCanvas = document.createElement('canvas');
+    nightCanvas.width = 512;
+    nightCanvas.height = 256;
+    const nightCtx = nightCanvas.getContext('2d');
+    
+    nightCtx.fillStyle = '#001122';
+    nightCtx.fillRect(0, 0, 512, 256);
+    
+    // Add city lights
+    for (let i = 0; i < 200; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 256;
+      nightCtx.fillStyle = `rgba(255, 255, 0, ${Math.random() * 0.8 + 0.2})`;
+      nightCtx.fillRect(x, y, 1, 1);
+    }
+    
+    const nightTexture = new THREE.CanvasTexture(nightCanvas);
+    nightTexture.wrapS = THREE.RepeatWrapping;
+    nightTexture.wrapT = THREE.RepeatWrapping;
+
+    // Create cloud texture
+    const cloudCanvas = document.createElement('canvas');
+    cloudCanvas.width = 512;
+    cloudCanvas.height = 256;
+    const cloudCtx = cloudCanvas.getContext('2d');
+    
+    cloudCtx.fillStyle = 'rgba(0, 0, 0, 0)';
+    cloudCtx.fillRect(0, 0, 512, 256);
+    
+    // Add cloud patterns
+    for (let i = 0; i < 100; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 256;
+      const radius = Math.random() * 30 + 10;
+      const opacity = Math.random() * 0.7 + 0.3;
+      cloudCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+      cloudCtx.beginPath();
+      cloudCtx.arc(x, y, radius, 0, Math.PI * 2);
+      cloudCtx.fill();
+    }
+    
+    const cloudTexture = new THREE.CanvasTexture(cloudCanvas);
+    cloudTexture.wrapS = THREE.RepeatWrapping;
+    cloudTexture.wrapT = THREE.RepeatWrapping;
+
+    return { dayTexture, nightTexture, cloudTexture };
+  }, []);
 
   const initialRotation = useMemo(() => {
     const now = new Date();
@@ -136,20 +210,20 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
       <mesh ref={meshRef} onClick={handleClick}>
         <sphereGeometry args={[1, 64, 64]} />
         <meshPhongMaterial 
-          map={dayTexture}
-          emissiveMap={nightTexture}
-          emissive={new THREE.Color(0xaaaaaa)}
-          specularMap={specularTexture}
+          map={textures.dayTexture}
+          emissiveMap={textures.nightTexture}
+          emissive={new THREE.Color(0x444444)}
+          shininess={100}
         />
       </mesh>
 
       <mesh ref={cloudsRef} scale={[1.005, 1.005, 1.005]}>
         <sphereGeometry args={[1, 64, 64]} />
         <meshPhongMaterial
-          map={cloudTexture}
+          map={textures.cloudTexture}
           transparent
           opacity={0.3}
-          alphaMap={cloudTexture}
+          alphaMap={textures.cloudTexture}
         />
       </mesh>
 
