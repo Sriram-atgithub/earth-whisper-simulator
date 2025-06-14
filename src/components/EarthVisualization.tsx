@@ -1,3 +1,4 @@
+
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
@@ -44,10 +45,10 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const dataLayerRef = useRef<THREE.Points>(null);
 
   const [dayTexture, nightTexture, specularTexture, cloudTexture] = useTexture([
-    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthmap1k.jpg',
-    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthnight.jpg',
-    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthspec1k.jpg',
-    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthcloudmap.jpg',
+    'https://stemkoski.github.io/Three.js/images/earth-day.jpg',
+    'https://stemkoski.github.io/Three.js/images/earth-night.jpg',
+    'https://stemkoski.github.io/Three.js/images/earth-specular.jpg',
+    'https://stemkoski.github.io/Three.js/images/earth-clouds.png',
   ]);
 
   const initialRotation = useMemo(() => {
