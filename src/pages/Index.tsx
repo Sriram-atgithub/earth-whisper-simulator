@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import EarthVisualization from '../components/EarthVisualization';
 import ControlPanel from '../components/ControlPanel';
 import RegionInfoCard from '../components/RegionInfoCard';
-import EarthWhisperChat from '../components/EarthWhisperChat';
 
 const dataLayers = [
   {
@@ -102,29 +102,22 @@ const Index = () => {
           />
         </div>
 
-        {/* Earth Visualization + EarthWhisperChat */}
-        <div className="flex-1 relative flex flex-col items-center justify-center">
-          {/* Existing EarthVisualization */}
-          <div className="absolute inset-0">
-            <EarthVisualization 
-              activeLayer={activeLayer}
-              onRegionSelect={handleRegionSelect}
-              isPlaying={isPlaying}
-              showSatellites={showSatellites}
-              timeSpeed={timeSpeed}
+        {/* Earth Visualization */}
+        <div className="flex-1 relative">
+          <EarthVisualization 
+            activeLayer={activeLayer}
+            onRegionSelect={handleRegionSelect}
+            isPlaying={isPlaying}
+            showSatellites={showSatellites}
+            timeSpeed={timeSpeed}
+          />
+          {selectedRegion && (
+            <RegionInfoCard 
+              region={selectedRegion}
+              onClose={() => setSelectedRegion(null)}
+              allLayers={dataLayers}
             />
-            {selectedRegion && (
-              <RegionInfoCard 
-                region={selectedRegion}
-                onClose={() => setSelectedRegion(null)}
-                allLayers={dataLayers}
-              />
-            )}
-          </div>
-          {/* Overlay the EarthWhisperChat panel (floating, but could be toggled/collapsed later) */}
-          <div className="relative z-10 w-full max-w-xl mx-auto mt-8">
-            <EarthWhisperChat />
-          </div>
+          )}
         </div>
       </div>
 
