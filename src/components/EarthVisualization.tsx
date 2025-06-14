@@ -46,7 +46,7 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const [dayTexture, nightTexture, specularTexture, cloudTexture] = useTexture([
     'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthmap1k.jpg',
     'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthnight.jpg',
-    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthspecular.jpg',
+    'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthspec1k.jpg',
     'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets/images/earthcloudmap.jpg',
   ]);
 
