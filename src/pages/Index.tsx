@@ -1,13 +1,66 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EarthVisualization from '../components/EarthVisualization';
-import DataPanel from '../components/DataPanel';
 import ControlPanel from '../components/ControlPanel';
+import RegionInfoCard from '../components/RegionInfoCard';
+
+const dataLayers = [
+  {
+    id: 'temperature',
+    name: 'Temperature',
+    icon: '🌡️',
+    description: 'Global surface temperature patterns',
+  },
+  {
+    id: 'precipitation',
+    name: 'Precipitation',
+    icon: '🌧️',
+    description: 'Rainfall and snow patterns',
+  },
+  {
+    id: 'wind',
+    name: 'Wind Patterns',
+    icon: '💨',
+    description: 'Atmospheric wind currents',
+  },
+  {
+    id: 'clouds',
+    name: 'Cloud Coverage',
+    icon: '☁️',
+    description: 'Global cloud formations',
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean Currents',
+    icon: '🌊',
+    description: 'Ocean temperature and currents',
+  },
+  {
+    id: 'vegetation',
+    name: 'Vegetation',
+    icon: '🌿',
+    description: 'Plant life and biomass',
+  }
+];
 
 const Index = () => {
   const [activeLayer, setActiveLayer] = useState('temperature');
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [showSatellites, setShowSatellites] = useState(true);
+  const [timeSpeed, setTimeSpeed] = useState(1);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleRegionSelect = (regionData) => {
+    setSelectedRegion(regionData);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-950 to-black text-white overflow-hidden">
@@ -26,7 +79,7 @@ const Index = () => {
               <span className="text-sm text-slate-300">Live Data</span>
             </div>
             <div className="text-sm text-slate-400">
-              {new Date().toLocaleTimeString()} UTC
+              {currentTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: false })} UTC
             </div>
           </div>
         </div>
@@ -35,12 +88,17 @@ const Index = () => {
       {/* Main Content */}
       <div className="flex h-screen pt-20">
         {/* Control Panel */}
-        <div className="w-80 p-6 bg-slate-900/50 backdrop-blur-sm border-r border-slate-700">
+        <div className="w-80 p-6 bg-slate-900/50 backdrop-blur-sm border-r border-slate-700 overflow-y-auto">
           <ControlPanel 
             activeLayer={activeLayer}
             setActiveLayer={setActiveLayer}
             isPlaying={isPlaying}
             setIsPlaying={setIsPlaying}
+            showSatellites={showSatellites}
+            setShowSatellites={setShowSatellites}
+            timeSpeed={timeSpeed}
+            setTimeSpeed={setTimeSpeed}
+            dataLayers={dataLayers}
           />
         </div>
 
@@ -48,17 +106,18 @@ const Index = () => {
         <div className="flex-1 relative">
           <EarthVisualization 
             activeLayer={activeLayer}
-            onRegionSelect={setSelectedRegion}
+            onRegionSelect={handleRegionSelect}
             isPlaying={isPlaying}
+            showSatellites={showSatellites}
+            timeSpeed={timeSpeed}
           />
-        </div>
-
-        {/* Data Panel */}
-        <div className="w-80 p-6 bg-slate-900/50 backdrop-blur-sm border-l border-slate-700">
-          <DataPanel 
-            activeLayer={activeLayer}
-            selectedRegion={selectedRegion}
-          />
+          {selectedRegion && (
+            <RegionInfoCard 
+              region={selectedRegion}
+              onClose={() => setSelectedRegion(null)}
+              allLayers={dataLayers}
+            />
+          )}
         </div>
       </div>
 

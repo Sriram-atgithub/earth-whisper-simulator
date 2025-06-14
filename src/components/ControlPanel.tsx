@@ -1,52 +1,11 @@
+import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-import { Play, Pause, RotateCcw, Settings, Info } from 'lucide-react';
-
-const ControlPanel = ({ activeLayer, setActiveLayer, isPlaying, setIsPlaying }) => {
-  const dataLayers = [
-    {
-      id: 'temperature',
-      name: 'Temperature',
-      icon: '🌡️',
-      description: 'Global surface temperature patterns',
-      color: 'from-blue-500 to-red-500'
-    },
-    {
-      id: 'precipitation',
-      name: 'Precipitation',
-      icon: '🌧️',
-      description: 'Rainfall and snow patterns',
-      color: 'from-blue-600 to-blue-300'
-    },
-    {
-      id: 'wind',
-      name: 'Wind Patterns',
-      icon: '💨',
-      description: 'Atmospheric wind currents',
-      color: 'from-green-500 to-yellow-400'
-    },
-    {
-      id: 'clouds',
-      name: 'Cloud Coverage',
-      icon: '☁️',
-      description: 'Global cloud formations',
-      color: 'from-slate-400 to-white'
-    },
-    {
-      id: 'ocean',
-      name: 'Ocean Currents',
-      icon: '🌊',
-      description: 'Ocean temperature and currents',
-      color: 'from-blue-800 to-cyan-400'
-    },
-    {
-      id: 'vegetation',
-      name: 'Vegetation',
-      icon: '🌿',
-      description: 'Plant life and biomass',
-      color: 'from-green-700 to-green-300'
-    }
-  ];
-
+const ControlPanel = ({ 
+  activeLayer, setActiveLayer, isPlaying, setIsPlaying,
+  showSatellites, setShowSatellites, timeSpeed, setTimeSpeed, dataLayers
+}) => {
   const satellites = [
     { name: 'GOES-16', status: 'active', dataPoints: '450K' },
     { name: 'NOAA-20', status: 'active', dataPoints: '380K' },
@@ -60,7 +19,7 @@ const ControlPanel = ({ activeLayer, setActiveLayer, isPlaying, setIsPlaying }) 
       {/* Playback Controls */}
       <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
         <h3 className="text-lg font-semibold mb-3 text-blue-400">Playback Controls</h3>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 mb-4">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             className="flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors"
@@ -71,9 +30,26 @@ const ControlPanel = ({ activeLayer, setActiveLayer, isPlaying, setIsPlaying }) 
             <RotateCcw size={16} />
           </button>
           <div className="flex-1 text-sm text-slate-300">
-            <div>Speed: 1x</div>
+            <div>Status: {isPlaying ? 'Playing' : 'Paused'}</div>
             <div className="text-slate-400">Real-time simulation</div>
           </div>
+        </div>
+        <div className="space-y-2">
+            <span className="text-sm text-slate-300">Simulation Speed</span>
+            <ToggleGroup type="single" value={String(timeSpeed)} onValueChange={(value) => value && setTimeSpeed(Number(value))} className="w-full grid grid-cols-3 gap-2">
+                <ToggleGroupItem value="1" aria-label="1x speed" className="w-full">1x</ToggleGroupItem>
+                <ToggleGroupItem value="10" aria-label="10x speed" className="w-full">10x</ToggleGroupItem>
+                <ToggleGroupItem value="100" aria-label="100x speed" className="w-full">100x</ToggleGroupItem>
+            </ToggleGroup>
+        </div>
+      </div>
+      
+      {/* Settings */}
+      <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+        <h3 className="text-lg font-semibold mb-3 text-blue-400">Settings</h3>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-300">Show Satellites</span>
+          <Switch checked={showSatellites} onCheckedChange={setShowSatellites} />
         </div>
       </div>
 

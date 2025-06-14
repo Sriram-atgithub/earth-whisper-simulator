@@ -1,31 +1,70 @@
 
-import { useRef, useState } from 'react';
+import { useRef, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
+const Satellites = ({ timeSpeed }) => {
+    const satRef = useRef<THREE.Group>(null);
+    useFrame((state, delta) => {
+        if(satRef.current) {
+            satRef.current.rotation.y += 0.05 * timeSpeed * delta;
+            satRef.current.rotation.x += 0.02 * timeSpeed * delta;
+        }
+    });
+
+    const sats = useMemo(() => {
+        const temp = [];
+        for (let i = 0; i < 15; i++) {
+            const r = 1.2 + Math.random() * 0.3;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.cos(phi);
+            const z = r * Math.sin(phi) * Math.sin(theta);
+            temp.push({ id: i, position: new THREE.Vector3(x, y, z) });
+        }
+        return temp;
+    }, []);
+
+    return (
+        <group ref={satRef}>
+            {sats.map(sat => (
+                <mesh key={sat.id} position={sat.position}>
+                    <boxGeometry args={[0.01, 0.01, 0.02]} />
+                    <meshBasicMaterial color="white" />
+                </mesh>
+            ))}
+        </group>
+    );
+}
+
+const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const atmosphereRef = useRef<THREE.Mesh>(null);
+  const cloudsRef = useRef<THREE.Mesh>(null);
   const dataLayerRef = useRef<THREE.Points>(null);
-  const [time, setTime] = useState(0);
 
-  // Use a realistic Earth texture from a reliable source
-  const earthTexture = useTexture('https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg');
+  const [dayTexture, nightTexture, specularTexture, cloudTexture] = useTexture([
+    'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg',
+    'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthnight.jpg',
+    'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthspecular.jpg',
+    'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthcloudmap.jpg',
+  ]);
 
-  useFrame((state) => {
-    if (isPlaying) {
-      setTime(time + 0.01);
-      if (meshRef.current) {
-        meshRef.current.rotation.y += 0.002;
-      }
-      if (atmosphereRef.current) {
-        atmosphereRef.current.rotation.y += 0.001;
-      }
+  const initialRotation = useMemo(() => {
+    const now = new Date();
+    const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
+    return (utcHours / 24) * Math.PI * 2;
+  }, []);
+
+  useFrame((state, delta) => {
+    if (isPlaying && meshRef.current && cloudsRef.current) {
+      const rotationIncrement = (delta / 20) * timeSpeed;
+      meshRef.current.rotation.y += rotationIncrement;
+      cloudsRef.current.rotation.y += rotationIncrement * 1.05;
     }
   });
 
-  // Generate climate data points based on active layer
   const generateDataPoints = () => {
     const points = [];
     const colors = [];
@@ -71,20 +110,50 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     if (event.point) {
-      onRegionSelect(event.point);
+      const { radius } = (event.object as any).geometry.parameters;
+      const lat = Math.asin(event.point.y / radius) * (180 / Math.PI);
+      const lon = Math.atan2(event.point.z, event.point.x) * (180 / Math.PI);
+
+      const regionData = {
+        lat,
+        lon,
+        name: `Region (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
+        data: {
+          temperature: `${(Math.random() * 50 - 20).toFixed(1)}°C`,
+          precipitation: `${(Math.random() * 150).toFixed(1)}mm`,
+          wind: `${(Math.random() * 80).toFixed(1)} km/h`,
+          clouds: `${(Math.random() * 100).toFixed(0)}%`,
+          ocean: `${(Math.random() * 4).toFixed(1)} kts`,
+          vegetation: `${(Math.random()).toFixed(2)} NDVI`,
+        }
+      };
+      onRegionSelect(regionData);
     }
   };
 
   return (
-    <group>
-      {/* Earth Sphere */}
+    <group rotation={[0, initialRotation, -23.5 * Math.PI / 180]}>
       <mesh ref={meshRef} onClick={handleClick}>
         <sphereGeometry args={[1, 64, 64]} />
-        <meshPhongMaterial map={earthTexture} />
+        <meshPhongMaterial 
+          map={dayTexture}
+          emissiveMap={nightTexture}
+          emissive={new THREE.Color(0xaaaaaa)}
+          specularMap={specularTexture}
+        />
       </mesh>
 
-      {/* Atmosphere */}
-      <mesh ref={atmosphereRef} scale={1.05}>
+      <mesh ref={cloudsRef} scale={[1.005, 1.005, 1.005]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshPhongMaterial
+          map={cloudTexture}
+          transparent
+          opacity={0.3}
+          alphaMap={cloudTexture}
+        />
+      </mesh>
+
+      <mesh scale={1.05}>
         <sphereGeometry args={[1, 32, 32]} />
         <meshBasicMaterial 
           color="#87CEEB" 
@@ -94,7 +163,6 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
         />
       </mesh>
 
-      {/* Data Layer Points */}
       <points ref={dataLayerRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -119,14 +187,13 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying }) => {
         />
       </points>
 
-      {/* Lighting */}
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 5, 5]} intensity={1} />
+      <ambientLight intensity={0.1} />
+      <directionalLight position={[10, 0, 5]} intensity={2.5} />
     </group>
   );
 };
 
-const EarthVisualization = ({ activeLayer, onRegionSelect, isPlaying }) => {
+const EarthVisualization = ({ activeLayer, onRegionSelect, isPlaying, showSatellites, timeSpeed }) => {
   return (
     <div className="w-full h-full relative">
       <Canvas camera={{ position: [0, 0, 3], fov: 75 }}>
@@ -135,7 +202,9 @@ const EarthVisualization = ({ activeLayer, onRegionSelect, isPlaying }) => {
           activeLayer={activeLayer}
           onRegionSelect={onRegionSelect}
           isPlaying={isPlaying}
+          timeSpeed={timeSpeed}
         />
+        {showSatellites && <Satellites timeSpeed={timeSpeed} />}
         <OrbitControls 
           enablePan={false}
           minDistance={1.5}
@@ -144,7 +213,6 @@ const EarthVisualization = ({ activeLayer, onRegionSelect, isPlaying }) => {
         />
       </Canvas>
       
-      {/* Layer Info Overlay */}
       <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-sm rounded-lg p-4 border border-slate-600">
         <h3 className="text-lg font-semibold text-blue-400 mb-2">
           {activeLayer.charAt(0).toUpperCase() + activeLayer.slice(1)} Data Layer
