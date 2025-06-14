@@ -1,9 +1,9 @@
+
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { getRegionFromCoordinates, generateRegionalData, GeographicalRegion } from '../utils/geoUtils';
-import DataLayerVisualizer from './DataLayerVisualizer';
 
 const Satellites = ({ timeSpeed }) => {
     const satRef = useRef<THREE.Group>(null);
@@ -44,7 +44,7 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const cloudsRef = useRef<THREE.Mesh>(null);
 
-  // Create procedural textures instead of loading external ones
+  // Create procedural textures for Earth
   const textures = useMemo(() => {
     // Create a simple day texture (blue and green)
     const dayCanvas = document.createElement('canvas');
@@ -201,9 +201,6 @@ const Earth = ({ activeLayer, onRegionSelect, isPlaying, timeSpeed }) => {
           side={THREE.BackSide}
         />
       </mesh>
-
-      {/* Data Layer Visualization */}
-      <DataLayerVisualizer activeLayer={activeLayer} isVisible={true} />
 
       <ambientLight intensity={0.2} />
       <directionalLight position={[10, 0, 5]} intensity={1.5} />
